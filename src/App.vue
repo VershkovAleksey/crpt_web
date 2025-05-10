@@ -1,9 +1,17 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view />
+  <div class="common-layout">
+    <el-container>
+      <!--      <el-header>Header</el-header>-->
+      <el-main
+        ><!--  <nav>-->
+        <!--    <router-link to="/">Home</router-link>-->
+        <!--    <router-link to="/about">About</router-link>-->
+        <!--  </nav>-->
+        <router-view />
+      </el-main>
+      <!--      <el-footer>Footer</el-footer>-->
+    </el-container>
+  </div>
 </template>
 
 <style>
@@ -27,4 +35,9 @@ nav a {
 nav a.router-link-exact-active {
   color: #42b983;
 }
+
+iframe#webpack-dev-server-client-overlay {
+  display: none !important;
+}
 </style>
+<script setup lang="ts"></script>
