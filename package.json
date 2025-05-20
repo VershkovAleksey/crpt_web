@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "axios": "^1.9.0",
+    "bcryptjs": "^3.0.2",
     "crypto-pro": "^2.5.2",
     "crypto-pro-cadesplugin": "^1.1.1",
     "crypto-pro-js": "^2.3.2",

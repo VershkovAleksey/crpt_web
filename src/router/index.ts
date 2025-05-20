@@ -16,6 +16,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () =>
       import(/* webpackChunkName: "about" */ "../views/AboutView.vue"),
   },
+  {
+    path: "/register",
+    name: "registration",
+    component: () => import("../views/RegistrationView.vue"),
+  },
+  {
+    path: "/auth",
+    name: "Auth",
+    component: () => import("../views/AuthView.vue"),
+  },
 ];
 
 const router = createRouter({

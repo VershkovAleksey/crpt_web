@@ -1,6 +1,11 @@
 <template>
-  <div class="sets">
-    <el-button plain @click="dialogVisible = true"> Создать наборы</el-button>
+  <div class="sets" v-loading="loading">
+    <div class="buttons">
+      <el-button plain @click="dialogVisible = true"> Создать наборы</el-button>
+      <el-button plain @click="seedNationalCatalog"
+        >Загрузить товары из национального каталога
+      </el-button>
+    </div>
     <el-dialog v-model="dialogVisible" title="Tips" :before-close="handleClose">
       <el-table :data="newSetsTable" border>
         <el-table-column label="Название">
@@ -63,6 +68,13 @@
     </el-table>
     <el-button plain @click="sendSetsToCreate"> Сформировать наборы</el-button>
 
+    <el-table :data="createdSets" style="width: 100%">
+      <el-table-column prop="setName" label="Название" />
+      <el-table-column prop="gtin" label="Gtin" />
+      <el-table-column prop="count" label="Количество" />
+      <el-table-column prop="status" label="Статус" />
+      <el-table-column prop="response" label="Идентификатор набора в ЧЗ" />
+    </el-table>
     <pre>{{ sign }}</pre>
   </div>
 </template>
@@ -77,12 +89,24 @@ import {
   createDetachedSignature,
 } from "crypto-pro";
 import axios from "axios";
+import NationalCatalogService from "@/services/national.catalog.service";
+import crptTokenService from "@/services/crpt.token.service";
+import markingService from "@/services/marking.service";
 
 type ListItem = {
   id: number;
   setName: string;
   gtin: string;
   count: number;
+};
+
+type createdSetItem = {
+  id: number;
+  setName: string;
+  gtin: string;
+  count: number;
+  response: string;
+  status: number;
 };
 
 const userCerts = ref<Certificate[]>([]);
@@ -119,8 +143,7 @@ const remoteMethod = (query: string) => {
 };
 
 const getSets = () => {
-  axios
-    .get("http://localhost:5274/api/Test/sets")
+  NationalCatalogService.getSetsOptions()
     .then((response) => {
       list.value = response.data;
     })
@@ -191,15 +214,30 @@ const createSignature = async function (
 };
 
 const sign = ref();
+const createdSets = ref<createdSetItem[]>();
 
+const getCreatedSets = () => {
+  NationalCatalogService.getSets().then((response) => {
+    createdSets.value = response.data;
+  });
+};
+
+const seedNationalCatalog = () => {
+  loading.value = true;
+  NationalCatalogService.seedData().then((response) => {
+    if (response.status == 200) {
+      loading.value = false;
+    }
+  });
+};
 const sendSetsToCreate = () => {
-  axios
-    .post("http://localhost:5274/api/Test/createSets", tableData.value)
-    .then((response) => console.log(response));
+  NationalCatalogService.createSets(tableData.value).then((response) =>
+    console.log(response)
+  );
 
   let token: string | undefined = undefined;
-  axios
-    .get("http://localhost:5274/api/Test/auth-data")
+  crptTokenService
+    .getAuthData()
     .then(async (response) => {
       await getUserCerts();
       let signature = await createSignature(
@@ -207,32 +245,15 @@ const sendSetsToCreate = () => {
         userCerts.value[1],
         false
       );
-      axios
-        .post(
-          "http://localhost:5274/api/Test/crpt-token",
-          {
-            uuid: response.data.uuid,
-            data: signature,
-          },
-          {
-            headers: {
-              accept: "application/json",
-            },
-          }
-        )
+      crptTokenService
+        .getAuthToken({
+          uuid: response.data.uuid,
+          data: signature,
+        })
         .then((response) => {
           token = response.data;
-          axios
-            .post(
-              "http://localhost:5274/api/Test/data-to-sign",
-              {},
-              {
-                headers: {
-                  accept: "application/json",
-                  token: token,
-                },
-              }
-            )
+          markingService
+            .getDataToSign(token)
             .then(async (dataToSignResponse) => {
               let request = dataToSignResponse.data;
               console.log(request);
@@ -244,19 +265,11 @@ const sendSetsToCreate = () => {
                 userCerts.value[1],
                 true
               );
-              axios
-                .post(
-                  "http://localhost:5274/api/Test/send-sets-to-mark",
-                  {
-                    token: token,
-                    request: request,
-                  },
-                  {
-                    headers: {
-                      accept: "application/json",
-                    },
-                  }
-                )
+              markingService
+                .sendSetsToMark({
+                  token: token,
+                  request: request,
+                })
                 .then((markResponse) => {
                   console.log(markResponse);
                 });
@@ -272,6 +285,7 @@ onMounted(async () => {
   //await getUserCerts();
   //await createSignature("Привет мир", userCerts.value[1]);
   getSets();
+  getCreatedSets();
 });
 </script>
 
@@ -285,5 +299,10 @@ onMounted(async () => {
 .sets {
   display: flex;
   flex-direction: column;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
 }
 </style>

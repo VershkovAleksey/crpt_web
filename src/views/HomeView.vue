@@ -1,17 +1,19 @@
 <template>
   <div class="home">
-    <HelloWorld msg="Welcome to Your Vue.js + TypeScript App" />
+    <HelloWorld />
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from "vue";
+<script lang="ts" setup>
+import { onMounted } from "vue";
+import router from "@/router";
+import store from "@/store";
 import HelloWorld from "@/components/HelloWorld.vue"; // @ is an alias to /src
 
-export default defineComponent({
-  name: "HomeView",
-  components: {
-    HelloWorld,
-  },
+onMounted(() => {
+  let user = store.state.auth.user;
+  if (!user) {
+    router.push("/auth");
+  }
 });
 </script>
