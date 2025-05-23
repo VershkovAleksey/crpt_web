@@ -1,7 +1,7 @@
 import axios from "axios";
 import authHeader from "./auth-header";
 
-const API_URL = "http://10.129.0.24:8000/api/Marking/";
+const API_URL = "http://130.193.52.139:8000/api/Marking/";
 
 class MarkingService {
   sendSetsToMark(request) {
