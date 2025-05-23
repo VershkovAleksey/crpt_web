@@ -5,7 +5,8 @@
   "scripts": {
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "test:dev": "http-server dist -p 8081 -c 1 --push-state"
   },
   "dependencies": {
     "@types/lodash": "^4.17.5",
@@ -15,7 +16,7 @@
     "crypto-pro-cadesplugin": "^1.1.1",
     "crypto-pro-js": "^2.3.2",
     "element-plus": "^2.9.9",
-    "vue": "^3.2.13",
+    "vue": "^3.2.26",
     "vue-axios": "^3.5.2",
     "vue-router": "^4.0.3",
     "vuex": "^4.0.0"
