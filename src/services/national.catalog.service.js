@@ -1,7 +1,7 @@
 import axios from "axios";
 import authHeader from "./auth-header";
 
-const API_URL = "http://localhost:8000/api/NationalCatalog/";
+const API_URL = "http://130.193.52.139:8000/api/NationalCatalog/";
 
 class NationalCatalogService {
   seedData() {
