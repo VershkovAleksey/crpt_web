@@ -1,5 +1,5 @@
 <template>
-  <div class="registration">
+  <div class="registration" v-loading="loading">
     <el-form
       label-width="auto"
       label-position="left"
@@ -67,6 +67,7 @@ type user = {
   inn: string;
 };
 const userFormRef = ref<FormInstance>();
+const loading = ref(false);
 const userItem = reactive<user>({
   firstName: "",
   lastName: "",
@@ -142,22 +143,26 @@ const submitForm = async (formEl: FormInstance | undefined) => {
   if (!formEl) return;
   await formEl.validate((valid, fields) => {
     if (valid) {
-      store.dispatch("auth/register", userItem).then(
-        (data) => {
-          let message = data.message;
-          router.push({ path: "/auth" });
-        },
-        (error) => {
-          let message =
-            (error.response &&
-              error.response.data &&
-              error.response.data.message) ||
-            error.message ||
-            error.toString();
-
-          ElMessage.error(message);
-        }
-      );
+      store
+        .dispatch("auth/register", userItem)
+        .then(
+          (data) => {
+            let message = data.message;
+            router.push({ path: "/auth" });
+          },
+          (error) => {
+            let message =
+              (error.response &&
+                error.response.data &&
+                error.response.data.message) ||
+              error.message ||
+              error.toString();
+            ElMessage.error(message);
+          }
+        )
+        .finally(() => {
+          loading.value = false;
+        });
     } else {
       console.log("error submit!", fields);
     }

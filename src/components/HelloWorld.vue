@@ -66,8 +66,51 @@
       <el-table-column prop="gtin" label="Gtin" />
       <el-table-column prop="count" label="Количество" />
     </el-table>
-    <el-button plain @click="sendSetsToCreate"> Сформировать наборы</el-button>
+    <el-button plain @click="chooseCertDialogVisible">
+      Сформировать наборы
+    </el-button>
 
+    <el-dialog v-model="setCertDialogVisible" style="width: 700px">
+      <el-card class="cert_card" v-for="item in userCerts" :key="item.name">
+        <template #header>
+          <div class="card-header">
+            <h1>{{ item.name }}</h1>
+          </div>
+        </template>
+        <div class="cert-wrapper">
+          <div>
+            <h3>Владелец</h3>
+            <p>{{ item.name }}</p>
+          </div>
+          <el-divider />
+          <div>
+            <h3>Издатель</h3>
+            <p>{{ item.issuerName }}</p>
+          </div>
+          <el-divider />
+          <div>
+            <h3>Информация</h3>
+            <p>{{ item.subjectName }}</p>
+          </div>
+          <el-divider />
+          <div>
+            <h3>Отпечаток</h3>
+            <p>{{ item.thumbprint }}</p>
+          </div>
+          <el-divider />
+          <div>
+            <h3>Действителен до</h3>
+            <p>{{ item.validTo }}</p>
+          </div>
+        </div>
+
+        <template #footer
+          ><el-button type="success" @click="sendSetsToCreate(item)"
+            >Выбрать</el-button
+          ></template
+        >
+      </el-card>
+    </el-dialog>
     <el-table :data="createdSets" style="width: 100%">
       <el-table-column prop="setName" label="Название" />
       <el-table-column prop="gtin" label="Gtin" />
@@ -92,6 +135,8 @@ import axios from "axios";
 import NationalCatalogService from "@/services/national.catalog.service";
 import crptTokenService from "@/services/crpt.token.service";
 import markingService from "@/services/marking.service";
+import store from "@/store";
+import { ElMessage } from "element-plus";
 
 type ListItem = {
   id: number;
@@ -111,6 +156,7 @@ type createdSetItem = {
 
 const userCerts = ref<Certificate[]>([]);
 const dialogVisible = ref(false);
+const setCertDialogVisible = ref(false);
 
 const loading = ref(false);
 const options = ref<ListItem[]>([]);
@@ -142,7 +188,8 @@ const remoteMethod = (query: string) => {
   }
 };
 
-const getSets = () => {
+const getSets = async () => {
+  console.log(store.state.auth.user);
   NationalCatalogService.getSetsOptions()
     .then((response) => {
       list.value = response.data;
@@ -230,11 +277,16 @@ const seedNationalCatalog = () => {
     }
   });
 };
-const sendSetsToCreate = () => {
+const chooseCertDialogVisible = () => {
+  setCertDialogVisible.value = true;
+  console.log(userCerts.value);
+};
+const sendSetsToCreate = (Certificate: Certificate) => {
+  setCertDialogVisible.value = false;
+  loading.value = true;
   NationalCatalogService.createSets(tableData.value).then((response) =>
     console.log(response)
   );
-
   let token: string | undefined = undefined;
   crptTokenService
     .getAuthData()
@@ -242,7 +294,7 @@ const sendSetsToCreate = () => {
       await getUserCerts();
       let signature = await createSignature(
         response.data.data,
-        userCerts.value[1],
+        Certificate,
         false
       );
       crptTokenService
@@ -258,11 +310,9 @@ const sendSetsToCreate = () => {
               let request = dataToSignResponse.data;
               console.log(request);
               let hash = await createHash(request.product_document);
-              console.log(hash);
-              console.log(userCerts.value[1]);
               request.signature = await createSignature(
                 hash,
-                userCerts.value[1],
+                Certificate,
                 true
               );
               markingService
@@ -272,17 +322,31 @@ const sendSetsToCreate = () => {
                 })
                 .then((markResponse) => {
                   console.log(markResponse);
+                })
+                .catch((error) => {
+                  ElMessage.error(error);
                 });
+            })
+            .catch((error) => {
+              console.log(error);
+              ElMessage.error(error);
             });
+        })
+        .catch((error) => {
+          ElMessage.error(error);
         });
     })
     .catch((error) => {
       console.log(error);
+      ElMessage.error(error);
+    })
+    .finally(() => {
+      loading.value = false;
     });
 };
 
 onMounted(async () => {
-  //await getUserCerts();
+  await getUserCerts();
   //await createSignature("Привет мир", userCerts.value[1]);
   getSets();
   getCreatedSets();
@@ -304,5 +368,27 @@ onMounted(async () => {
 .buttons {
   display: flex;
   justify-content: space-between;
+}
+.cert-wrapper {
+  display: flex;
+  flex-direction: column;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    p {
+      text-align: right;
+    }
+  }
+}
+.cert_card {
+  padding: 10px;
+  margin-bottom: 20px;
+
+  p {
+    font-size: 12px;
+  }
 }
 </style>
