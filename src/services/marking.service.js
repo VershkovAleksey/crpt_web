@@ -14,11 +14,12 @@ class MarkingService {
     let user = JSON.parse(localStorage.getItem("user"));
     return axios.post(
       API_URL + "data-to-sign",
-      {},
+      {
+        token: token,
+      },
       {
         headers: {
           Authorization: `Bearer ${user.accessToken}`,
-          token: token,
         },
       }
     );
