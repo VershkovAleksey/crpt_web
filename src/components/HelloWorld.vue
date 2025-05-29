@@ -114,6 +114,7 @@
     <el-table :data="createdSets" style="width: 100%">
       <el-table-column prop="setName" label="Название" />
       <el-table-column prop="gtin" label="Gtin" />
+      <el-table-column prop="date" label="Дата создания" />
       <el-table-column prop="count" label="Количество" />
       <el-table-column prop="status" label="Статус" />
       <el-table-column prop="response" label="Идентификатор набора в ЧЗ" />
@@ -136,7 +137,8 @@ import NationalCatalogService from "@/services/national.catalog.service";
 import crptTokenService from "@/services/crpt.token.service";
 import markingService from "@/services/marking.service";
 import store from "@/store";
-import { ElMessage } from "element-plus";
+import { ElNotification } from "element-plus";
+import { CloseBold } from "@element-plus/icons-vue";
 
 type ListItem = {
   id: number;
@@ -157,7 +159,7 @@ type createdSetItem = {
 const userCerts = ref<Certificate[]>([]);
 const dialogVisible = ref(false);
 const setCertDialogVisible = ref(false);
-
+const currentSertificate = ref(Certificate);
 const loading = ref(false);
 const options = ref<ListItem[]>([]);
 const list = ref<ListItem[]>([]);
@@ -279,70 +281,120 @@ const seedNationalCatalog = () => {
 };
 const chooseCertDialogVisible = () => {
   setCertDialogVisible.value = true;
-  console.log(userCerts.value);
 };
-const sendSetsToCreate = (Certificate: Certificate) => {
-  setCertDialogVisible.value = false;
-  loading.value = true;
-  NationalCatalogService.createSets(tableData.value).then((response) =>
-    console.log(response)
-  );
-  let token: string | undefined = undefined;
-  crptTokenService
-    .getAuthData()
-    .then(async (response) => {
-      await getUserCerts();
-      let signature = await createSignature(
-        response.data.data,
-        Certificate,
-        false
-      );
-      crptTokenService
-        .getAuthToken({
-          uuid: response.data.uuid,
-          data: signature,
-        })
-        .then((response) => {
-          token = response.data;
-          markingService
-            .getDataToSign(token)
-            .then(async (dataToSignResponse) => {
-              let request = dataToSignResponse.data;
-              console.log(request);
-              let hash = await createHash(request.product_document);
-              request.signature = await createSignature(
-                hash,
-                Certificate,
-                true
-              );
-              markingService
-                .sendSetsToMark({
-                  token: token,
-                  request: request,
-                })
-                .then((markResponse) => {
-                  console.log(markResponse);
-                })
-                .catch((error) => {
-                  ElMessage.error(error);
-                });
-            })
-            .catch((error) => {
-              console.log(error);
-              ElMessage.error(error);
-            });
-        })
-        .catch((error) => {
-          ElMessage.error(error);
-        });
+
+const sendToMark = async (token: string, request: any) => {
+  await markingService
+    .sendSetsToMark({
+      token: token,
+      request: request,
+    })
+    .then((markResponse) => {
+      console.log(markResponse);
     })
     .catch((error) => {
-      console.log(error);
-      ElMessage.error(error);
-    })
-    .finally(() => {
-      loading.value = false;
+      ElNotification({
+        title: "Ошибка",
+        message: error.response.data,
+        closeIcon: CloseBold,
+        type: "error",
+        duration: 0,
+      });
+      throw new Error(error.response.data);
     });
+};
+const getSignData = async (token: string, certificate: Certificate) => {
+  let request: any;
+  await markingService
+    .getDataToSign(token)
+    .then(async (dataToSignResponse) => {
+      request = dataToSignResponse.data;
+      console.log(request);
+      let hash = await createHash(request.product_document);
+      request.signature = await createSignature(hash, certificate, true);
+    })
+    .catch((error) => {
+      console.log(error.response.data);
+      ElNotification({
+        title: "Ошибка",
+        message: error.response.data,
+        closeIcon: CloseBold,
+        type: "error",
+        duration: 0,
+      });
+      throw new Error(error.response.data);
+    });
+  await sendToMark(token, request);
+};
+const getToken = async (
+  signature: string,
+  uuid: string,
+  certificate: Certificate
+) => {
+  let token = "";
+  await crptTokenService
+    .getAuthToken({
+      uuid: uuid,
+      data: signature,
+    })
+    .then((response) => {
+      token = response.data;
+    })
+    .catch((error) => {
+      ElNotification({
+        title: "Ошибка",
+        message: error.response.data,
+        closeIcon: CloseBold,
+        type: "error",
+        duration: 0,
+      });
+      throw new Error(error.response.data);
+    });
+
+  await getSignData(token, certificate);
+};
+const getAuthData = async (certificate: Certificate) => {
+  let signature = "";
+  let uuid = "";
+
+  await crptTokenService
+    .getAuthData()
+    .then(async (response) => {
+      let signatureResponse = await createSignature(
+        response.data.data,
+        certificate,
+        false
+      );
+      if (signatureResponse) {
+        signature = signatureResponse;
+      } else {
+        throw new Error("Не удалось создать подпись для получения токена CRPT");
+      }
+      uuid = response.data.uuid;
+    })
+    .catch((error) => {
+      console.log(error.response.data);
+      ElNotification({
+        title: "Ошибка",
+        message: error.response.data,
+        closeIcon: CloseBold,
+        type: "error",
+        duration: 0,
+      });
+      throw new Error(error.response.data);
+    });
+
+  await getToken(signature, uuid, certificate);
+};
+const sendSetsToCreate = async (certificate: Certificate) => {
+  setCertDialogVisible.value = false;
+  loading.value = true;
+  await NationalCatalogService.createSets(tableData.value).then((response) =>
+    console.log(response)
+  );
+  await getAuthData(certificate).finally(() => {
+    loading.value = false;
+  });
 };
 
 onMounted(async () => {
