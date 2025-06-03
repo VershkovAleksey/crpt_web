@@ -389,9 +389,19 @@ const getAuthData = async (certificate: Certificate) => {
 const sendSetsToCreate = async (certificate: Certificate) => {
   setCertDialogVisible.value = false;
   loading.value = true;
-  await NationalCatalogService.createSets(tableData.value).then((response) =>
-    console.log(response)
-  );
+  await NationalCatalogService.createSets(tableData.value)
+    .then((response) => console.log(response))
+    .catch((error) => {
+      console.log(error.response.data);
+      ElNotification({
+        title: "Ошибка",
+        message: error.response.data,
+        closeIcon: CloseBold,
+        type: "error",
+        duration: 0,
+      });
+      throw new Error(error.response.data);
+    });
   await getAuthData(certificate).finally(() => {
     loading.value = false;
   });
