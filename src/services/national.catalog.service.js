@@ -18,6 +18,17 @@ class NationalCatalogService {
     });
   }
 
+  deleteItem(item) {
+    var id = item.id;
+    return axios.post(
+      API_URL + "delete-request" + "?id=" + id,
+      {},
+      {
+        headers: authHeader(),
+      }
+    );
+  }
+
   getSets() {
     return axios.get(API_URL + "get-sets", { headers: authHeader() });
   }

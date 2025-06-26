@@ -112,19 +112,26 @@
       </el-card>
     </el-dialog>
     <el-table :data="createdSets" style="width: 100%">
-      <el-table-column prop="setName" label="Название" />
+      <el-table-column prop="setName" label="Название" width="500" />
       <el-table-column prop="gtin" label="Gtin" />
       <el-table-column prop="date" label="Дата создания" />
-      <el-table-column prop="count" label="Количество" />
+      <el-table-column prop="count" label="Количество" width="120" />
       <el-table-column prop="status" label="Статус" />
       <el-table-column prop="response" label="Идентификатор набора в ЧЗ" />
+      <el-table-column fixed="right" label="Действия" width="100">
+        <template #default="scope">
+          <el-button size="small" type="danger" @click="deleteItem(scope.row)">
+            Удалить
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
     <pre>{{ sign }}</pre>
   </div>
 </template>
 
 <script lang="ts" async setup>
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted } from "vue";
 import {
   getUserCertificates,
   Certificate,
@@ -138,7 +145,7 @@ import crptTokenService from "@/services/crpt.token.service";
 import markingService from "@/services/marking.service";
 import store from "@/store";
 import { ElNotification } from "element-plus";
-import { CloseBold } from "@element-plus/icons-vue";
+import { Close, CloseBold } from "@element-plus/icons-vue";
 
 type ListItem = {
   id: number;
@@ -159,7 +166,6 @@ type createdSetItem = {
 const userCerts = ref<Certificate[]>([]);
 const dialogVisible = ref(false);
 const setCertDialogVisible = ref(false);
-const currentSertificate = ref(Certificate);
 const loading = ref(false);
 const options = ref<ListItem[]>([]);
 const list = ref<ListItem[]>([]);
@@ -200,14 +206,7 @@ const getSets = async () => {
       console.log(error);
     });
 };
-
-const onSubmit = () => {
-  console.log("submit!");
-};
-
 const getUserCerts = async function () {
-  let certificates;
-
   try {
     userCerts.value = await getUserCertificates();
   } catch (error) {
@@ -407,15 +406,21 @@ const sendSetsToCreate = async (certificate: Certificate) => {
   });
 };
 
+const deleteItem = (item: any) => {
+  console.log(item);
+  NationalCatalogService.deleteItem(item).then((response) => {
+    console.log(response);
+    getCreatedSets();
+  });
+};
+
 onMounted(async () => {
   await getUserCerts();
-  //await createSignature("Привет мир", userCerts.value[1]);
-  getSets();
+  await getSets();
   getCreatedSets();
 });
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .dialog-footer {
   display: flex;

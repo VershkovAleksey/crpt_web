@@ -23,6 +23,9 @@
       <el-form-item label="Телефон" prop="phoneNumber">
         <el-input v-model="userItem.phoneNumber" />
       </el-form-item>
+      <el-form-item label="ИНН" prop="inn">
+        <el-input v-model="userItem.inn" />
+      </el-form-item>
       <el-form-item label="Пароль" prop="password">
         <el-input
           v-model="userItem.password"
@@ -111,6 +114,19 @@ const validateApiKey = (rule: any, value: any, callback: any) => {
   }
 };
 
+const validateInn = (rule: any, value: any, callback: any) => {
+  let regex = new RegExp("^[0-9]+$");
+  if (value === "") {
+    callback(new Error("Обязательное поле"));
+  } else if (!regex.test(value)) {
+    callback(new Error("Допустимы только арабские цифры"));
+  } else if (value.length != 12) {
+    callback(new Error("Длина ИНН должна быть равна 12 символам"));
+  } else {
+    callback();
+  }
+};
+
 const rules = reactive<FormRules<typeof userItem>>({
   firstName: [
     { required: true, trigger: "blur", message: "Обязательное поле" },
@@ -126,6 +142,10 @@ const rules = reactive<FormRules<typeof userItem>>({
     { validator: validateApiKey, trigger: "blur" },
   ],
   email: [{ required: true, trigger: "blur", message: "Обязательное поле" }],
+  inn: [
+    { required: true, trigger: "blur", message: "Обязательное поле" },
+    { validator: validateInn, trigger: "blur" },
+  ],
   phoneNumber: [
     { required: true, trigger: "blur", message: "Обязательное поле" },
   ],
