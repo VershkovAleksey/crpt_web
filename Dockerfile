@@ -14,5 +14,6 @@ COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY ./nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY ./nginx/nginx.conf /etc/nginx/nginx.conf
 RUN ls -la /usr/share/nginx/html
+RUN ls -la /usr/share/nginx/html && ls -la /etc/nginx/conf.d/
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
