@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8000/api/Wb/";
+const API_URL = "http://213.165.218.221:8000/api/Wb/";
 
 class WbService {
   createSupplies() {

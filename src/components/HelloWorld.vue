@@ -2,6 +2,7 @@
   <div class="sets" v-loading="loading">
     <div class="buttons">
       <el-button plain @click="dialogVisible = true"> Создать наборы</el-button>
+      <el-button plain @click="createSupplies"> Создать сборочные задания</el-button>
       <el-button plain @click="seedNationalCatalog"
         >Загрузить товары из национального каталога
       </el-button>
@@ -143,6 +144,7 @@ import axios from "axios";
 import NationalCatalogService from "@/services/national.catalog.service";
 import crptTokenService from "@/services/crpt.token.service";
 import markingService from "@/services/marking.service";
+import wbService from "@/services/wb.service";
 import store from "@/store";
 import { ElNotification } from "element-plus";
 import { Close, CloseBold } from "@element-plus/icons-vue";
@@ -179,6 +181,11 @@ const newSetsTable = ref<ListItem[]>([
   },
 ]);
 
+const createSupplies = () =>{
+  wbService.createSupplies().then((response) =>{
+    console.log(response);
+  })
+}
 const remoteMethod = (query: string) => {
   if (query) {
     loading.value = true;
